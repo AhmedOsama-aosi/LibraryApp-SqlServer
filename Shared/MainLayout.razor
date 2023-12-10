@@ -1,0 +1,42 @@
+﻿@inherits LayoutComponentBase
+@*@implements IDisposable;
+*@
+<PageTitle>المكتبة الصوفية</PageTitle>
+<style>
+    
+</style>
+<div class="page">
+    <div class="sidebar" style="background-color:#1d764d!important;background-image:none !important; width:auto; ">
+        <div >
+            <NavMenu />
+        </div>
+       
+    </div>
+
+    <main>
+      
+
+        @*    <article class="content px-4">*@        
+        <article class="" style=" padding:0 !important;overflow:auto;">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code{
+  //  private string title = "الرئيسية";
+    private string title = "بحث في جميع كتب المكتبة";
+    static MainLayout theLayout ;
+    protected override void OnInitialized()
+    {
+      
+        theLayout = this;
+    }
+  
+    public void change_ti(string na)
+    {
+       
+       theLayout.title = na;
+        theLayout.StateHasChanged();
+    }
+}

@@ -1,0 +1,26 @@
+﻿<style>
+	.top-row{
+        background-color: #f7f7f7;
+       /* background-color: #00000017;*/
+        border-bottom: 1px solid #d6d5d5;
+        justify-content: space-between;
+        height: 3.5rem;
+        display: flex;
+        align-items: center;
+        flex-direction: row;
+    
+	}
+</style>
+
+<div class="top-row px-4" style="display:flex;flex-direction:row;justify-content:space-between;">
+
+
+    <h1 style="margin:0; color:green;font-family:Kitab;font-size:230%">@title</h1>   
+@*<h1 style="margin:0; color:black;font-family:Kitab;font-size:215%;font-weight:500">@title</h1>*@
+
+</div>
+@code {
+	[Parameter]
+	public string title { get; set; }
+
+}

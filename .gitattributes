@@ -1,0 +1,2 @@
+. filter=lfs diff=lfs merge=lfs -text
+obj/Release/net6.0/win-x64/PubTmp/Out/LibraryApp.exe filter=lfs diff=lfs merge=lfs -text

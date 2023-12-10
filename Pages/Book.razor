@@ -1,0 +1,151 @@
+﻿@page "/Book"
+@layout EmptyLayout
+@using Microsoft.AspNetCore.WebUtilities;
+@using System.Text;
+@using System.Text.Json;
+
+<style>
+    /*.my-custom-scrollbar {
+        position: relative;
+        height: 55vh;
+        overflow: auto;
+    }
+
+    .table-wrapper-scroll-y {
+        display: block;
+    }
+
+    .custom_button {
+        height: fit-content;
+        margin: 0;
+    }
+
+    .selected {
+        background-color: lightgray;
+    }
+*/
+</style>
+
+@if (book != null)
+{
+    <PageTitle>@book.Bk</PageTitle>
+    <div style="display:flex;flex-direction:row;justify-content:space-between;">
+        <div style="display:flex;flex-direction:row;justify-content:flex-start;flex:5">
+            <h3>@book.Bk</h3>
+            
+        </div>
+        <div style="display:flex;flex-direction:row;justify-content:flex-start;height:2%">
+            <input type="text" class="custom-select" style="margin:0px 10px;" />
+            <button class="btn btn-success" style="margin:0px 10px">بحث</button>
+        </div>
+       <div>
+            <button class="btn btn-success" style="margin:0px 10px">تعديل</button>
+       </div>
+      
+    </div>
+    <BookView selectedBook="book" showtitle="false"></BookView>
+  @*  <h3>@book.Bk</h3>
+    <div style="display:flex;flex-direction:row;">
+
+        <table class="table table-hover table-bordered" style="flex:1;overflow:auto">
+            <thead class="">
+                <tr>
+                    <th scope="col">الجزء</th>
+
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var item in book.Books.Select(b => b.Part).Distinct())
+                {
+                    <tr @onclick="()=>change_part(item.Value)" style="cursor:pointer;">
+                        <td>@item.Value</td>
+                    </tr>
+                }
+
+            </tbody>
+        </table>
+
+        <div class="alert alert-success" style="font-family: system-ui; font-size: 24px;flex:8;">
+            @if (selectedpart.Length != 0)
+            {
+                <h4 class="alert-heading">الصفحة @(pageindex + 1) من @selectedpart.Length</h4>
+                <p style="height:60vh;overflow:auto">@selectedpart[pageindex].Nass</p>
+
+            }
+            else
+            {
+                <h4 class="alert-heading">لا يوجد صفحات</h4>
+            }
+            <div style="display:flex;flex-direction:row;justify-content:space-between">
+                <p class="btn btn-sm custom_button" @onclick="PerviousPage">السابق</p>
+                <p class="btn btn-sm custom_button" @onclick="NextPage">التالي</p>
+
+            </div>
+        </div>
+
+    </div>*@
+}
+@code {
+    [Parameter]
+    public Model._0bok book { get; set; }
+    Model.Book[] selectedpart { get; set; }
+    int bookid { get; set; }
+    int pageindex = 0;
+    @inject NavigationManager NavigationManager
+    protected override async void OnInitialized()
+    {
+        // Get the query parameter from the URL
+       
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("data", out var data))
+        {
+            bookid = int.Parse(data[0]);
+            using (Model.DbtContext db = new Model.DbtContext())
+            {
+                book = db._0boks.Where(b => b.Bkid == bookid).First();
+                
+            }
+        }
+        
+        get_pages();
+    }
+    async Task get_pages()
+	{
+       
+        using (Model.DbtContext db = new Model.DbtContext())
+        {
+            book.Books =  db.Books.Where(b => b.Bookid == book.Bkid).OrderBy(p => p.Id).ToArray();
+            pageindex = 0;
+
+            selectedpart = book.Books.Where(b => b.Part == 1).OrderBy(b => b.Id).ToArray();
+        }
+        
+
+	}
+    void change_part(int part)
+    {
+        if (part != selectedpart[0].Part)
+        {
+            selectedpart = book.Books.Where(b => b.Part == part).OrderBy(b => b.Id).ToArray();
+
+        }
+        pageindex = 0;
+    }
+    private void NextPage()
+    {
+        if (pageindex < selectedpart.Length - 1)
+        {
+            pageindex++;
+
+        }
+    }
+    private void PerviousPage()
+    {
+        if (pageindex > 0)
+        {
+            pageindex--;
+
+        }
+    }
+}

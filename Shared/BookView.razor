@@ -1,0 +1,215 @@
+﻿@using System.Text.RegularExpressions;
+@if (selectedBook != null)
+{
+    if (book_name != selectedBook.Bk)
+    {
+        book_name = selectedBook.Bk;
+        pageindex = 0;
+        selectedpart = selectedBook.Books.Where(b => b.Part == 1).OrderBy(b => b.Id).ToList();
+        format_Text();
+        get_titles();
+    }
+
+
+    @if (showtitle)
+    {
+        <div style="display:flex;flex-direction:row;justify-content:space-between">
+            <div style="display:flex;flex-direction:row;justify-content:flex-start">
+                <h3>@selectedBook.Bk</h3>
+            </div>
+
+        </div>
+    }
+   
+    @*        <div class="table-wrapper-scroll-y my-custom-scrollbar" style="flex:1;">*@
+    <div class="custom-row">
+        @if (selectedBook.Books != null)
+        {
+            var partlist = selectedBook.Books.Where(b=>b.Part>-1).Select(b => b.Part).Distinct().OrderBy(p => p.Value);
+            <span class="item-margin item-center">الجزء</span>
+            <select @onchange=change_part_event class="custom-select item-margin " style="width:10% !important;">
+
+                @foreach (var item in partlist)
+                {
+                    <option class="dropdown-item" value=@item.Value>@item.Value</option>
+                }
+            </select>
+            <span class="item-margin item-center">من</span>
+            <span class="item-margin item-center">@partlist.ToList().Count</span>
+        }
+
+    </div>
+    <div class="custom-row">
+
+
+
+        <div class="table-wrapper-scroll-y my-custom-scrollbar table-responsive" style="flex:5;Max-height:68vh !important;background-color: lightgoldenrodyellow;border-radius:8px;padding:10px;border-left: #198754 2px solid;">
+            <table class="table table-hover " style="">
+                <thead class="">
+                    <tr>
+                        <th scope="col">العناوين</th>
+
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Titles_List != null)
+                    {
+
+                        @foreach (var item in Titles_List)
+                        {
+                            <tr style="cursor:pointer;" @onclick="()=>select_title(item)">
+                                <td>@item.Tit</td>
+                            </tr>
+                        }
+
+
+                    }
+                </tbody>
+            </table>
+        </div>
+
+
+
+
+        <div style=" flex:20;">
+
+           
+
+                @*                        <p style="height:60vh;overflow:auto">@selectedpart[pageindex].Nass</p>*@
+                <div style="width:100%;height:68vh;font-size:100%;background-color: lightgoldenrodyellow;border-radius:8px;overflow:auto;padding:10px;flex:20;">
+                @if (selectedpart.Count != 0)
+                {
+                    <h4 class="alert-heading">الصفحة @(pageindex + 1) من @selectedpart.Count</h4>
+                    @((MarkupString)converted_text)
+                }
+                else
+                {
+                    <h4 class="alert-heading">لا يوجد صفحات</h4>
+                }
+                </div>
+           
+
+
+        </div>
+
+    </div>
+
+    <div class="custom-row" style="justify-content:space-between !important;">
+        <button class="btn btn-success item-margin" style="" @onclick="PerviousPage">السابق</button>
+        <input class="custom-select item-margin" style="width:10vw !important; text-align:center" value="@(pageindex+1)" @onchange=input_change />
+        <button class="btn btn-success item-margin" style="" @onclick="NextPage">التالي</button>
+    </div>
+}
+
+@code {
+
+    string converted_text = "";
+    int pageindex = 0;
+    string book_name = "";
+    [Parameter]
+    public Model._0bok selectedBook { get; set; }
+    [Parameter]
+    public bool showtitle { get; set; }
+
+    List<Model.Book> selectedpart { get; set; }
+    List<Model.Title> Titles_List { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        book_name = selectedBook.Bk;
+        int st = selectedBook.Books.Min(x=>x.Part).Value;
+        selectedpart = selectedBook.Books.Where(b => b.Part == st).OrderBy(b => b.Id).ToList();
+
+        change_part(st);
+    }
+
+    void format_Text()
+    {
+        if (selectedpart != null && selectedpart.Count != 0)
+        {
+            converted_text = selectedpart[pageindex].Nass;
+            converted_text = converted_text.Replace("\n", "<br>");
+            converted_text = converted_text.Replace("\r", "<br>");
+           // converted_text = Regex.Replace(converted_text, "(<span.*?[>])", "<span style='color:green;'>");
+            converted_text = Regex.Replace(converted_text, "(<span.*?[>])", "titlestart");
+            converted_text = Regex.Replace(converted_text, "(<\\/span.*?[>])", "titleend");
+            converted_text = System.Text.RegularExpressions.Regex.Replace(converted_text, @"([^\u0621-\u064A\s(<br>)\\n\d\w])", @"<span style='color:red;'>$&</span>");
+            converted_text = Regex.Replace(converted_text, "(titlestart)", "<span style='color:green;'>");
+            converted_text = Regex.Replace(converted_text, "(titleend)", "</span>");
+        }
+        else
+        {
+            converted_text = "";
+        }
+
+    }
+    void change_part_event(ChangeEventArgs e)
+    {
+        change_part(int.Parse(e.Value.ToString()));
+    }
+    void change_part(int part)
+    {
+        if (selectedpart != null && selectedpart.Count != 0)
+        {
+            if (part != selectedpart[0].Part)
+            {
+                selectedpart = selectedBook.Books.Where(b => b.Part == part).OrderBy(b => b.Id).ToList();
+
+            }
+
+            format_Text();
+            get_titles();
+        }
+        else
+        {
+            Titles_List = null;
+        }
+        pageindex = 0;
+
+    }
+
+    void get_titles()
+    {
+        using (Model.DbtContext db = new Model.DbtContext())
+        {
+            //	local_title_list = db.Titles.Where(t => t.Bookid == selected_book_id).ToList();
+            Titles_List = (from t in db.Titles where t.Bookid == selectedBook.Bkid && (from b in db.Books where b.Bookid == selectedBook.Bkid && b.Part == selectedpart[0].Part select b.Id).Distinct().Contains(t.Id) select t).OrderBy(t => t.Id).ToList();
+        }
+    }
+    private void NextPage()
+    {
+        if (pageindex < selectedpart.Count - 1)
+        {
+            pageindex++;
+            format_Text();
+        }
+    }
+    private void PerviousPage()
+    {
+        if (pageindex > 0)
+        {
+            pageindex--;
+            format_Text();
+        }
+    }
+    void input_change(ChangeEventArgs agrs)
+    {
+
+        pageindex = int.Parse(agrs.Value.ToString()) - 1;
+        if (pageindex < 0)
+        {
+            pageindex = 0;
+        }
+        if (pageindex > selectedpart.Count - 1)
+        {
+            pageindex = selectedpart.Count - 1;
+        }
+        StateHasChanged();
+        format_Text();
+    }
+    void select_title(Model.Title _tile)
+    {
+        pageindex = selectedpart.IndexOf(selectedpart.Where(p => p.Id == _tile.Id).First());
+        format_Text();
+    }
+}

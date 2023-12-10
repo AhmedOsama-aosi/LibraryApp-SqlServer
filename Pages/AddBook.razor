@@ -1,0 +1,723 @@
+﻿@page "/ManageBooks"
+@using Microsoft.EntityFrameworkCore;
+
+<style>
+	.custom-alert{
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		padding: 0;
+		z-index: 4;
+		position: fixed;
+		top: 25vh;
+		height: 8vh;
+		width: 25vw;
+		right: 37.5vw;
+		font-size: 1.5rem;
+		box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 2px 10px rgb(0, 0, 0,0.25) !important;
+	}
+
+
+	.custom-row:before, .custom-row:after {
+		content: none;
+	}
+
+	
+</style>
+<MainTitle title="ادارة الكتب"></MainTitle>
+@if (show_alert)
+{
+	<div class="alert alert-success custom-alert alert-dismissible ">
+		<p style="margin:auto; align-self:center;">تم الحفظ</p>
+
+	</div>
+}
+
+
+<div class="page-body">
+
+
+
+	<p style="margin:0;font-weight:600">القسم:</p>
+	<div class="custom-row ">
+
+
+		<select @onchange=chenge_category_selection class="custom-select item-margin ">
+			@if (local_cat_list != null)
+			{
+				<option>لم يتم تحديد</option>
+				foreach (Model._0cat item in local_cat_list)
+				{
+					<option class="dropdown-item" value=@item.Id>@item.Name</option>
+				}
+			}
+			else
+			{
+				<option>لا يوجد اقسام</option>
+			}
+		</select>
+
+
+
+		<button class="btn btn-success item-margin" style="" @onclick="()=>show_hide(ref show_edit_cat)">تعديل</button>
+
+	</div>
+	@if (show_edit_cat && selected_cat != null && selected_book != null)
+	{
+		string cat_name = selected_cat.Name;
+	
+		<div class="card" style="margin:10px 20px; padding:10px">
+			<p style="margin:0;font-weight:600">تعديل القسم :</p>
+			<div class="custom-row" >
+				<span class="item-margin item-center">من</span>
+
+				<input class="custom-select item-margin" disabled @bind=cat_name />
+				<span class="item-margin item-center">الي</span>
+				<select @bind=selected_cat_id class="custom-select item-margin">
+					@if (local_cat_list != null)
+					{
+						foreach (Model._0cat item in local_cat_list)
+						{
+							<option value=@item.Id>@item.Name</option>
+						}
+					}
+					else
+					{
+						<option>لا يوجد اقسام</option>
+					}
+				</select>
+				<button class="btn btn-success item-margin" style="" @onclick="edit_category">حفظ</button>
+			</div>
+
+		</div>
+		
+
+	}
+
+	<p style="margin:0;font-weight:600">الكتاب:</p>
+	<div class="custom-row">
+
+		<select @onchange=chenge_book_selection class="custom-select item-margin">
+			@if (local_books_list != null)
+			{
+				<option>لم يتم تحديد</option>
+				foreach (Model._0bok item in local_books_list)
+				{
+					<option value="@item.Bkid">@item.Bk</option>
+				}
+			}
+			else
+			{
+				@if (selected_cat == null)
+				{
+					<option>لم يتم تحديد قسم</option>
+				}
+				else
+				{
+					<option>لا يوجد كتب</option>
+				}
+			}
+		</select>
+
+
+
+		@*<input type="text" class="item-margin" @bind-value=@selected_book_id style="width:20%" />*@
+		<button class="btn btn-success item-margin" style="" @onclick="()=>show_hide(ref show_edit_book)">تعديل</button>
+		<button class="btn btn-success item-margin" style="" @onclick="()=>show_hide(ref show_add_book)">اضافة</button>
+
+	</div>
+	@if (show_edit_book && selected_book != null)
+	{
+		string bok_name = selected_book.Bk;
+			<div class="card" style="margin:10px 20px; padding:10px">
+			<p style="margin:0;font-weight:600">تعديل الاسم :</p>
+			<div class="custom-row ">
+				<span class="item-margin item-center">من</span>
+				<input class="custom-select item-margin" disabled @bind=bok_name />
+				<span class="item-margin item-center">الي</span>
+				<input class="custom-select item-margin" @bind=selected_book.Bk />
+				<button class="btn btn-success item-margin" style="" @onclick="edit_book">حفظ</button>
+			</div>
+			</div>
+		
+	
+
+
+	}
+	@if (show_add_book && selected_cat != null)
+	{
+		
+		<div class="card" style="margin:10px 20px; padding:10px">
+			<p style="margin:0;font-weight:600">اضافة كتاب:</p>
+			
+			<div class="custom-row ">
+				<span class="item-margin item-center">الاسم</span>
+
+				<input class="custom-select item-margin" @bind=book_name />
+
+				<button class="btn btn-success item-margin" style="" @onclick="add_book">حفظ</button>
+			</div>
+		</div>
+
+		
+
+
+	}
+	<p style="margin:0;font-weight:600">الجزء:</p>
+	<div class="custom-row">
+		<select @onchange="chenge_part_selection" class="custom-select item-margin">
+			@if (local_part_list != null)
+			{
+				foreach (short item in local_part_list)
+				{
+					<option value="@item">@item</option>
+				}
+			}
+			else
+			{
+				@if (selected_book == null)
+				{
+					<option>لم يتم تحديد كتاب</option>
+				}
+				else
+				{
+					<option>لا يوجد اجزاء</option>
+				}
+			
+			}
+		</select>
+		@*	<input type="text" @bind-value=@selected_part_id style="width:20%" />*@
+		<button class="btn  btn-success item-margin" style="" @onclick="()=>show_hide(ref show_edit_part)">تعديل</button>
+		<button class="btn  btn-success item-margin" style="" >اضافة</button>
+	</div>
+
+	@if (show_edit_part && selected_book!=null && selected_part_id!=0)
+	{
+		int _part_number = selected_part_id;
+		<div class="card" style="margin:10px 20px; padding:10px">
+			<p style="margin:0;font-weight:600">تعديل رقم الجزء :</p>
+
+			<div class="custom-row ">
+				<span class="item-margin item-center">من</span>
+				<input class="custom-select item-margin" disabled @bind=_part_number />
+				<span class="item-margin item-center">الي</span>
+			
+				<input class="custom-select item-margin" @bind=part_number />
+
+				<button class="btn btn-success item-margin" style="" @onclick="edit_part">حفظ</button>
+				<button class="btn btn-danger item-margin" style="" @onclick="delete_part">حذف</button>
+			</div>
+		</div>
+	}
+	<p style="margin:0;font-weight:600">العنوان:</p>
+	<div class="custom-row">
+		<select @onchange="change_title_selection" class="custom-select item-margin">
+			@if (local_title_list != null)
+			{
+				foreach (Model.Title item in local_title_list)
+				{
+					<option value="@item.RowId">@item.Tit</option>
+				}
+			}
+			else
+			{
+				@if (selected_book ==null)
+				{
+					<option>لم يتم تحديد كتاب</option>
+				}
+				else
+				{
+					<option>لا يوجد عناوين</option>
+				}
+				
+			}
+		</select>
+	
+
+		<button class="btn btn-success item-margin" style="" @onclick="()=>show_hide(ref show_edit_title)">تعديل</button>
+		<button class="btn btn-success item-margin" style="" @onclick="()=>show_hide(ref show_add_title)">اضافة</button>
+		
+	</div>
+	@if (show_edit_title && selected_title != null)
+	{
+		string _title_name = selected_title.Tit;
+		<div class="card" style="margin:10px 20px; padding:10px">
+			<p style="margin:0;font-weight:600">تعديل العنوان :</p>
+
+			<div class="custom-row ">
+				<span class="item-margin item-center">من</span>
+				<input class="custom-select item-margin" disabled @bind=_title_name />
+				<span class="item-margin item-center">الي</span>
+
+				<input class="custom-select item-margin" @bind=title_name />
+
+				<button class="btn btn-success item-margin" style="" @onclick="edit_title">حفظ</button>
+				<button class="btn btn-danger item-margin" style="" @onclick="get_Titles">حذف</button>
+			</div>
+		</div>
+
+	}
+	@if (show_add_title && selected_book != null)
+	{
+
+		<div class="card" style="margin:10px 20px; padding:10px">
+			<p style="margin:0;font-weight:600">اضافة عنوان:</p>
+
+			<div class="custom-row ">
+				<span class="item-margin item-center">الاسم</span>
+
+				<input class="custom-select item-margin" @bind=title_name />
+
+				<button class="btn btn-success item-margin" style="" @onclick="add_title">حفظ</button>
+			</div>
+		</div>
+
+	}
+	<p style="margin:0;font-weight:600">الصفحة:</p>
+	<div class="custom-row">
+		<select @bind=selected_page_id class="custom-select item-margin">
+			@if (local_page_list != null)
+			{
+				foreach (Model.Book item in local_page_list)
+				{
+					<option value="@item.Id">@item.Page</option>
+				}
+			}
+			else
+			{
+				@if (selected_book == null)
+				{
+					<option>لم يتم تحديد كتاب</option>
+				}
+				else
+				{
+					<option>لا يوجد صفحات</option>
+				}
+			}
+		</select>
+
+		
+		<button class="btn btn-success item-margin" style="" @onclick="add_page">اضافة</button>
+	</div>
+	<p style="margin:0;font-weight:600">النص:</p>
+
+
+	@if (local_page_list != null && local_page_list.Count > 0 && selected_page_id != 0)
+	{
+
+		if (selected_page != null)
+		{
+			if (selected_page.Id != selected_page_id)
+			{
+				if (
+				orignal_page.Page != selected_page.Page ||
+				orignal_page.Part != selected_page.Part ||
+				orignal_page.Nass != selected_page.Nass
+
+				)
+				{
+					//add the page to changed list
+					changed_pages_list.Add(selected_page);
+				}
+
+			}
+
+
+
+		}
+		selected_page = local_page_list.Where(x => x.Id == selected_page_id).First();
+		if (orignal_page == null || orignal_page.RowId != selected_page.RowId)
+		{
+			orignal_page = new Model.Book();
+			orignal_page.RowId = selected_page.RowId;
+			orignal_page.Page = selected_page.Page;
+			orignal_page.Part = selected_page.Part;
+			orignal_page.Nass = selected_page.Nass;
+		}
+
+
+		<div class="custom-row" style="justify-content:space-between;">
+			<div class="custom-row" style="width:30%">
+				<span class="item-margin item-center">جزء</span>
+				<input type="text" class="custom-select item-margin" @bind-value=@selected_page.Part style="width:12vh !important" />
+				<span class="item-margin item-center">صفحة</span>
+				<input type="text" class="custom-select  item-margin" @bind-value=@selected_page.Page style="width:12vh !important" />
+			</div>
+			<button class="btn btn-success item-margin" style="" @onclick="edit_page">حفظ التعديلات</button>
+		</div>
+	
+
+		<textarea type="text" @bind=selected_page.Nass style="width:100%;height:80vh;resize:none;font-size:160%;background-color: lightgoldenrodyellow;border-radius:8px;overflow:auto;"></textarea>
+
+	}
+	
+
+</div>
+
+@code {
+	//Model.DbtContext db;
+	int selected_cat_id { get; set; }
+	int selected_book_id { get; set; }
+	int selected_part_id { get; set; }
+	int selected_title_id { get; set; }
+	int? selected_page_id { get; set; }
+	//int Selected_part_id
+	//{
+	//	get => selected_part_id;
+	//	set
+	//	{
+	//		selected_part_id = value;
+	//		get_Pages();
+	//	}
+	//}
+	//int Selected_part_id { get; set; }
+	Model._0cat? selected_cat { get; set; }
+	Model._0bok? selected_book { get; set; }
+	//	int? selected_part { get; set; }
+	Model.Title? selected_title { get; set; }
+	Model.Book? selected_page { get; set; }
+
+	List<Model._0cat>? local_cat_list { get; set; }
+	List<Model._0bok>? local_books_list { get; set; }
+	List<short?> local_part_list { get; set; }
+	List<Model.Title>? local_title_list { get; set; }
+	List<Model.Book>? local_page_list { get; set; }
+
+	void add() { }
+	//categories
+	void get_Category()
+	{
+		using (Model.DbtContext db = new Model.DbtContext())
+		{
+			local_cat_list = db._0cats.ToList();
+		}
+	}
+	void edit_category()
+	{
+		selected_book.Cat = selected_cat_id;
+		using (Model.DbtContext db=new Model.DbtContext())
+		{
+			db._0boks.Attach(selected_book);
+			db.Entry(selected_book).State = EntityState.Modified;
+			db.SaveChanges();
+			alert();
+			show_hide(ref show_edit_cat);
+		}
+	}
+	void add_category(string name)
+	{
+		Model._0cat new_cat = new Model._0cat();
+		new_cat.Name = name;
+		int max = 0;
+		using (Model.DbtContext db = new Model.DbtContext())
+		{
+			max = db._0cats.Max(c => c.Id);
+			new_cat.Id = max + 1;
+			db._0cats.Add(new_cat);
+			db.SaveChanges();
+		}
+	}
+	void chenge_category_selection(ChangeEventArgs args)
+	{
+		if (args != null)
+		{
+			selected_cat_id = int.Parse(args.Value.ToString());
+			selected_cat = local_cat_list.Where(x => x.Id == selected_cat_id).First();
+			get_Books();
+		}
+
+	}
+
+
+	//book
+	string book_name { get; set; }
+	void get_Books()
+	{
+		using (Model.DbtContext db = new Model.DbtContext())
+		{
+
+			local_books_list = db._0boks.Where(b => b.Cat == selected_cat_id).ToList();
+		}
+		selected_book_id = local_books_list.First().Bkid;
+	}
+	void edit_book()
+	{
+		Model._0bok book = selected_book;
+
+
+		using (Model.DbtContext db = new Model.DbtContext())
+		{
+			db.Attach(book);
+			db.Entry(book).State = EntityState.Modified;
+			db.SaveChanges();
+			alert();
+			show_hide(ref show_edit_book);
+		}
+
+
+	}
+	void add_book()
+	{
+		int max = 0;
+		using (Model.DbtContext db = new Model.DbtContext())
+		{
+			max = db._0boks.Max(b => b.Bkid);
+		}
+		Model._0bok book = new Model._0bok();
+		book.Bkid = max + 1;
+		book.Cat = selected_cat.Id;
+		book.Bk = book_name;
+		local_books_list.Add(book);
+		using (Model.DbtContext db = new Model.DbtContext())
+		{
+			db._0boks.Add(book);
+			db.SaveChanges();
+			alert();
+			show_hide(ref show_add_book);
+		}
+	}
+	void chenge_book_selection(ChangeEventArgs args)
+	{
+		selected_book_id = int.Parse(args.Value.ToString());
+		selected_book = local_books_list.Where(b => b.Bkid == selected_book_id).First();
+		book_name = selected_book.Bk;
+		get_Parts();
+	}
+
+	//parts
+	short? part_number { get; set; }
+	void get_Parts()
+	{
+
+		using (Model.DbtContext db = new Model.DbtContext())
+		{
+			//selected_book = db._0boks.Where(b => b.Bkid == selected_book_id).First();
+
+			local_part_list = db.Books.Where(b => b.Bookid == selected_book_id && b.Part>0).Select(b => b.Part).Distinct().OrderBy(x => x.Value).ToList();
+		}
+		selected_part_id = local_part_list.FirstOrDefault() ?? 0;
+		get_Titles();
+		get_Pages();
+	}
+	void edit_part()
+	{
+		using (Model.DbtContext db = new Model.DbtContext() )
+		{
+			var list = db.Books.Where(b => b.Bookid == selected_book_id && b.Part == selected_part_id);
+			foreach (var item in list)
+			{
+				item.Part = part_number;
+			}
+			db.SaveChanges();
+			alert();
+			show_hide(ref show_edit_part);
+		}
+	}
+	void delete_part()
+	{
+		using (Model.DbtContext db = new Model.DbtContext())
+		{
+			var list = db.Books.Where(b => b.Bookid == selected_book_id && b.Part == selected_part_id);
+			foreach (var item in list)
+			{
+				item.Part = (short)-selected_part_id;
+			}
+			db.SaveChanges();
+			alert();
+			show_hide(ref show_edit_part);
+		}
+	}
+	void chenge_part_selection(ChangeEventArgs args)
+	{
+		selected_part_id = int.Parse(args.Value.ToString());
+		get_Titles();
+		get_Pages();
+	}
+
+
+	//page
+	List<Model.Book> changed_pages_list { get; set; }
+	Model.Book orignal_page { get; set; }
+	void get_Pages()
+	{
+		selected_page = null;
+		using (Model.DbtContext db = new Model.DbtContext())
+		{
+			local_page_list = db.Books.Where(b => b.Bookid == selected_book_id && b.Part == selected_part_id).OrderBy(p => p.Page).ToList();
+		}
+		selected_page_id = local_page_list.FirstOrDefault()?.Id ?? 0;
+		changed_pages_list = new List<Model.Book>();
+	}
+	void edit_page()
+	{
+		if (
+			orignal_page.Page != selected_page.Page ||
+			orignal_page.Part != selected_page.Part ||
+			orignal_page.Nass != selected_page.Nass
+			)
+		{
+			//add the page to changed list
+			changed_pages_list.Add(selected_page);
+		}
+		using (Model.DbtContext db = new Model.DbtContext())
+		{
+			foreach (Model.Book item in changed_pages_list)
+			{
+				if (item.RowId != 0)
+				{
+					db.Books.Attach(item);
+					db.Entry(item).State = EntityState.Modified;
+				}
+			}
+			db.SaveChanges();
+			alert();
+
+		}
+
+	}
+	void add_page()
+	{
+		int max = 0;
+		Model.Book new_page = new Model.Book();
+		int index_of_pervious_page = 0;
+		using (Model.DbtContext db = new Model.DbtContext())
+		{
+			max = db.Books.Where(b => b.Bookid == selected_book_id).Max(p => p.Id) ?? 0;
+			if (selected_page != null)
+			{
+				new_page.Page = selected_page.Page + 1;
+				new_page.Part = selected_page.Part;
+				index_of_pervious_page = local_page_list.IndexOf(selected_page);
+			}
+			else
+			{
+				new_page.Page = 1;
+				new_page.Part = 1;
+				index_of_pervious_page = -1;
+			}
+			new_page.Bookid = selected_book?.Bkid;
+			new_page.Id = max + 1;
+			new_page.Nass = " ";
+			db.Books.Add(new_page);
+			local_page_list.Insert(index_of_pervious_page + 1, new_page);
+
+			for (int i = index_of_pervious_page + 2; i < local_page_list.Count; i++)
+			{
+				local_page_list[i].Page++;
+				db.Books.Attach(local_page_list[i]);
+				db.Entry(local_page_list[i]).State = EntityState.Modified;
+
+			}
+			db.SaveChanges();
+			alert();
+
+		}
+
+
+
+
+
+
+		local_page_list = local_page_list.OrderBy(p => p.Page).ToList();
+		selected_page_id = new_page.Id;
+	}
+	void add_if_changed(Model.Book _page)
+	{
+
+		Model.Book page = selected_page;
+		if (page.RowId != 0)
+		{
+
+			if (
+				page.Nass != _page.Nass ||
+				page.Page != _page.Page ||
+				page.Part != _page.Part
+			)
+			{
+				changed_pages_list.Add(page);
+			}
+
+		}
+
+	}
+
+	Model._0cat? new_cat { get; set; }
+
+
+	//title
+	string title_name { get; set; }
+	void get_Titles()
+	{
+		using (Model.DbtContext db = new Model.DbtContext())
+		{
+			//	local_title_list = db.Titles.Where(t => t.Bookid == selected_book_id).ToList();
+			local_title_list = (from t in db.Titles where t.Bookid == selected_book_id && (from b in db.Books where b.Bookid == selected_book_id && b.Part == selected_part_id select b.Id).Distinct().Contains(t.Id) select t).OrderBy(t => t.Id).ToList();
+		}
+		selected_title = local_title_list.FirstOrDefault();
+		selected_title_id = selected_title?.RowId ?? 0;
+	}
+	void edit_title()
+	{
+		using (Model.DbtContext db = new Model.DbtContext())
+		{
+			var title = db.Titles.Where(t => t.Bookid == selected_book_id && t.RowId == selected_title_id).First();
+			title.Tit = title_name;
+			db.SaveChanges();
+			alert();
+			show_hide(ref show_edit_title);
+		}
+	}
+	void add_title()
+	{
+		Model.Title new_title = new Model.Title();
+		new_title.Bookid = selected_book.Bkid;
+		new_title.Tit = title_name;
+		new_title.Id = selected_page.Id ?? 1;
+		local_title_list.Add(new_title);
+		using (Model.DbtContext db = new Model.DbtContext())
+		{
+			db.Titles.Add(new_title);
+			db.SaveChanges();
+		}
+	}
+	void change_title_selection(ChangeEventArgs e)
+	{
+		selected_title_id = int.Parse(e.Value.ToString());
+		selected_title = local_title_list?.Where(x => x.RowId == selected_title_id).FirstOrDefault();
+		title_name = selected_title.Tit;
+	}
+
+
+
+	void change_cat(ChangeEventArgs e)
+	{
+		new_cat = local_cat_list.Where(c => c.Id == int.Parse(e.Value.ToString())).First();
+	}
+
+	protected override void OnInitialized()
+	{
+		// Initialize your items and selectedItem here
+		get_Category();
+
+	}
+	bool show_edit_cat = false;
+	bool show_edit_book = false;
+	bool show_add_book = false;
+	bool show_edit_part = false;
+	bool show_edit_title = false;
+	bool show_add_title = false;
+	bool show_alert = false;
+	void show_hide(ref bool value)
+	{
+		value = !value;
+		//StateHasChanged();
+	}
+	//alert
+	async void alert()
+	{
+		show_alert = !show_alert;
+		await Task.Delay(3500);
+		show_alert = !show_alert;
+		StateHasChanged();
+	}
+}
